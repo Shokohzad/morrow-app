@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your Focus</title>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- Top Banner -->
+  <header>
+    <div style="display:flex; align-items:center;">
+      <img src="Morrow.svg" alt="Morrow logo" style="height:32px; width:auto;">
+    </div>
+
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="start.html">Focus</a>
+      <a href="journal.html">Journal</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1 id="title"></h1>
+    <p id="message"></p>
+
+    <a class="button" id="nextButton">Next</a>
+    <a class="back-button" href="start.html">← Back</a>
+
+    <footer>© 2026 Morrow</footer>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const topic = params.get("topic");
+
+    const messages = {
+      "Breathing": "Settle into the rhythm of your breath. Let each inhale create space, and each exhale soften what feels tight. You’re here, and that’s enough.",
+      "Clarity": "Let the noise fall away for a moment. Give your mind room to see what matters and let the rest drift to the edges.",
+      "Slowing down": "Release the pace you’ve been keeping. Move gently, without urgency. Let this moment unfold at a human speed.",
+      "Letting go": "You don’t have to hold everything. Allow something small to loosen its grip. Make space for lightness to return.",
+      "Staying present": "Come back to what’s right here. Notice the details, the sensations, the quiet. Let this moment be your anchor.",
+      "Calm energy": "Find the steady place between stillness and momentum. A grounded kind of alertness that doesn’t rush or strain.",
+      "Focus": "Choose one thing to give your attention to. Let everything else soften for now. Presence is enough.",
+      "Gratitude": "Pause and notice what’s already supporting you. Even the smallest things can shift the way the moment feels.",
+      "Resetting": "This is a fresh start, no matter what came before it. Let this moment be a gentle beginning.",
+      "Mindfulness": "Notice your breath, your posture, and the sensations in your body. Let everything be exactly as it is, without changing it."
+    };
+
+    const mood = params.get("mood") || "";
+    const minutes = params.get("minutes") || "5";
+
+    document.getElementById("title").textContent = topic || "Your Focus";
+    document.getElementById("message").textContent =
+      messages[topic] || "Take a moment to settle in and be here with yourself.";
+
+    const nextParams = new URLSearchParams({ topic: topic || "", mood, minutes });
+    document.getElementById("nextButton").href = "next.html?" + nextParams.toString();
+  </script>
+
+</body>
+</html>

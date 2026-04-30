@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Get Started</title>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <header>
+    <div style="display:flex; align-items:center;">
+      <img src="Morrow.svg" alt="Morrow logo" style="height:32px; width:auto;">
+    </div>
+
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="start.html">Focus</a>
+      <a href="journal.html">Journal</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Let's begin</h1>
+    <p>Take a moment to check in with yourself before you start.</p>
+
+    <label>How are you feeling right now?</label>
+    <div class="mood-row" id="moodRow">
+      <button class="mood-btn" data-mood="🌑" title="Low">🌑</button>
+      <button class="mood-btn" data-mood="🌒" title="Uneasy">🌒</button>
+      <button class="mood-btn" data-mood="🌓" title="Neutral">🌓</button>
+      <button class="mood-btn" data-mood="🌔" title="Good">🌔</button>
+      <button class="mood-btn" data-mood="🌕" title="Great">🌕</button>
+    </div>
+
+    <label>What would you like to focus on?</label>
+    <div class="custom-select" id="focusDropdown">
+      <div class="custom-select__trigger" tabindex="0">
+        <span id="focusTriggerText" class="placeholder">Select one...</span>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="gray" xmlns="http://www.w3.org/2000/svg"><polygon points="5,7 15,7 10,12"/></svg>
+      </div>
+      <div class="custom-select__options" id="focusOptions">
+        <div class="option" data-value="Breathing">Breathing</div>
+        <div class="option" data-value="Clarity">Clarity</div>
+        <div class="option" data-value="Slowing down">Slowing down</div>
+        <div class="option" data-value="Letting go">Letting go</div>
+        <div class="option" data-value="Staying present">Staying present</div>
+        <div class="option" data-value="Calm energy">Calm energy</div>
+        <div class="option" data-value="Focus">Focus</div>
+        <div class="option" data-value="Gratitude">Gratitude</div>
+        <div class="option" data-value="Resetting">Resetting</div>
+        <div class="option" data-value="Mindfulness">Mindfulness</div>
+        <div class="option" data-value="__custom__">Something else…</div>
+      </div>
+    </div>
+    <input class="custom-input" id="customFocus" type="text" placeholder="Describe your focus…" maxlength="60" />
+
+    <label>How long would you like to practice?</label>
+    <div class="duration-row" id="durationRow">
+      <button class="duration-btn" data-minutes="1">1 min</button>
+      <button class="duration-btn" data-minutes="3">3 min</button>
+      <button class="duration-btn selected" data-minutes="5">5 min</button>
+      <button class="duration-btn" data-minutes="10">10 min</button>
+    </div>
+
+    <a class="button" href="#" id="continueBtn">Continue</a>
+    <a class="back-button" href="index.html">← Back</a>
+
+    <footer>© 2026 Morrow</footer>
+  </main>
+
+  <script>
+    let selectedMood = "";
+    let selectedMinutes = 5;
+
+    // Mood selection
+    document.querySelectorAll(".mood-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedMood = btn.dataset.mood;
+      });
+    });
+
+    // Duration selection
+    document.querySelectorAll(".duration-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".duration-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedMinutes = parseInt(btn.dataset.minutes);
+      });
+    });
+
+    // Custom dropdown
+    let focusValue = "";
+    const dropdown = document.getElementById("focusDropdown");
+    const trigger = dropdown.querySelector(".custom-select__trigger");
+    const optionsList = document.getElementById("focusOptions");
+    const triggerText = document.getElementById("focusTriggerText");
+    const customInput = document.getElementById("customFocus");
+
+    trigger.addEventListener("click", function () {
+      dropdown.classList.toggle("open");
+    });
+
+    trigger.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") dropdown.classList.toggle("open");
+      if (e.key === "Escape") dropdown.classList.remove("open");
+    });
+
+    optionsList.querySelectorAll(".option").forEach(function (opt) {
+      opt.addEventListener("click", function () {
+        optionsList.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+        focusValue = opt.dataset.value;
+        triggerText.textContent = opt.textContent;
+        triggerText.classList.remove("placeholder");
+        dropdown.classList.remove("open");
+        if (focusValue === "__custom__") {
+          customInput.style.display = "block";
+          customInput.focus();
+        } else {
+          customInput.style.display = "none";
+        }
+      });
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!dropdown.contains(e.target)) dropdown.classList.remove("open");
+    });
+
+    // Continue
+    document.getElementById("continueBtn").addEventListener("click", function (e) {
+      e.preventDefault();
+
+      let topic = focusValue;
+      if (topic === "__custom__") {
+        topic = customInput.value.trim();
+        if (!topic) { customInput.focus(); return; }
+      }
+      if (!topic) return;
+
+      const params = new URLSearchParams({
+        topic: topic,
+        mood: selectedMood,
+        minutes: selectedMinutes
+      });
+      window.location.href = "focus.html?" + params.toString();
+    });
+  </script>
+
+</body>
+</html>

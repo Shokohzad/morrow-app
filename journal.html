@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Journal</title>
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    .journal-empty {
+      color: var(--color-muted);
+      font-size: 1.1rem;
+      margin-top: 2rem;
+    }
+
+    .journal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .journal-entry {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+
+    .journal-entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .journal-entry-topic {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .journal-entry-date {
+      font-size: 0.875rem;
+      color: var(--color-muted);
+    }
+
+    .journal-entry-text {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--color-text);
+      white-space: pre-wrap;
+      margin: 0;
+      max-width: none;
+    }
+
+    .journal-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .clear-button {
+      font-size: 0.9rem;
+      color: var(--color-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      font-family: var(--font-main);
+    }
+
+    .clear-button:hover {
+      color: var(--color-text);
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div style="display:flex; align-items:center;">
+      <img src="Morrow.svg" alt="Morrow logo" style="height:32px; width:auto;">
+    </div>
+
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="start.html">Focus</a>
+      <a href="journal.html">Journal</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Your journal</h1>
+    <p>A quiet record of your moments of reflection.</p>
+
+    <div id="moodChartContainer"></div>
+    <div id="journalContent"></div>
+
+    <footer>© 2026 Morrow</footer>
+  </main>
+
+  <script>
+    const entries = JSON.parse(localStorage.getItem("morrowJournal") || "[]");
+    const container = document.getElementById("journalContent");
+
+    // ── Weekly mood sparkline ────────────────────────────────────────────────
+    const moodScale = { "🌑": 1, "🌒": 2, "🌓": 3, "🌔": 4, "🌕": 5 };
+
+    const chartContainer = document.getElementById("moodChartContainer");
+    if (entries.some(e => e.moodBefore || e.moodAfter)) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sunday = new Date(today);
+      sunday.setDate(today.getDate() - today.getDay());
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(sunday);
+        d.setDate(sunday.getDate() + i);
+        days.push(d);
+      }
+
+      const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+      const points = days.map(function (day) {
+        const next = new Date(day); next.setDate(next.getDate() + 1);
+        const dayEntry = entries.find(function (e) {
+          const d = new Date(e.date);
+          return d >= day && d < next;
+        });
+        return {
+          label:  dayLabels[day.getDay()],
+          before: dayEntry ? (dayEntry.moodBefore || null) : null,
+          after:  dayEntry ? (dayEntry.moodAfter  || null) : null
+        };
+      });
+
+      const chartEl = document.createElement("div");
+      chartEl.className = "mood-chart";
+      chartEl.innerHTML = `
+        <div class="mood-chart-title">This week's mood</div>
+        <div class="mood-week-row">
+          ${points.map(function (p) {
+            const shift = p.before && p.after
+              ? `<span class="mood-week-moons">${p.before} <span class="mood-week-arrow">→</span> ${p.after}</span>`
+              : p.after
+              ? `<span class="mood-week-moons">${p.after}</span>`
+              : p.before
+              ? `<span class="mood-week-moons muted">${p.before}</span>`
+              : `<span class="mood-week-moons muted">—</span>`;
+            return `
+              <div class="mood-week-day">
+                <span class="mood-week-label">${p.label}</span>
+                ${shift}
+              </div>`;
+          }).join("")}
+        </div>
+      `;
+      chartContainer.appendChild(chartEl);
+    }
+
+    if (entries.length === 0) {
+      container.innerHTML = `
+        <p class="journal-empty">No entries yet. Complete a session and write a reflection to see it here.</p>
+        <a class="button" href="start.html">Start a session</a>
+      `;
+    } else {
+      const list = document.createElement("div");
+      list.className = "journal-list";
+
+      entries.forEach(function (entry) {
+        const date = new Date(entry.date);
+        const formatted = date.toLocaleDateString(undefined, {
+          weekday: "short", year: "numeric", month: "short", day: "numeric"
+        });
+        const time = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+
+        const el = document.createElement("div");
+        el.className = "journal-entry";
+
+        const moodHtml = (entry.moodBefore || entry.moodAfter) ? `
+          <div class="journal-entry-mood">
+            ${entry.moodBefore ? `<span>${entry.moodBefore}</span>` : ""}
+            ${entry.moodBefore && entry.moodAfter ? `<span class="mood-arrow">→</span>` : ""}
+            ${entry.moodAfter ? `<span>${entry.moodAfter}</span>` : ""}
+          </div>` : "";
+
+        const metaHtml = entry.minutes ? `
+          <div class="journal-entry-meta">
+            <span>${entry.minutes} min session</span>
+          </div>` : "";
+
+        const reflectionHtml = entry.reflection ? `
+          <p class="journal-entry-text">${entry.reflection.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>` : "";
+
+        el.innerHTML = `
+          <div class="journal-entry-header">
+            <span class="journal-entry-topic">${entry.topic}</span>
+            <span class="journal-entry-date">${formatted} · ${time}</span>
+          </div>
+          ${moodHtml}
+          ${reflectionHtml}
+          ${metaHtml}
+        `;
+        list.appendChild(el);
+      });
+
+      container.appendChild(list);
+
+      const actions = document.createElement("div");
+      actions.className = "journal-actions";
+      actions.innerHTML = `
+        <a class="button" href="start.html">New session</a>
+        <button class="clear-button" id="clearBtn">Clear all entries</button>
+      `;
+      container.appendChild(actions);
+
+      document.getElementById("clearBtn").addEventListener("click", function () {
+        if (confirm("Clear all journal entries? This cannot be undone.")) {
+          localStorage.removeItem("morrowJournal");
+          window.location.reload();
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>

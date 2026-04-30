@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reflection</title>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <header>
+    <div style="display:flex; align-items:center;">
+      <img src="Morrow.svg" alt="Morrow logo" style="height:32px; width:auto;">
+    </div>
+
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="start.html">Focus</a>
+      <a href="journal.html">Journal</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1 id="title"></h1>
+    <p id="prompt"></p>
+
+    <label>How do you feel now?</label>
+    <div class="mood-row" id="moodAfterRow">
+      <button class="mood-btn" data-mood="🌑">🌑</button>
+      <button class="mood-btn" data-mood="🌒">🌒</button>
+      <button class="mood-btn" data-mood="🌓">🌓</button>
+      <button class="mood-btn" data-mood="🌔">🌔</button>
+      <button class="mood-btn" data-mood="🌕">🌕</button>
+    </div>
+
+    <label for="reflectionText">A few thoughts…</label>
+    <textarea id="reflectionText" placeholder="Write a few thoughts here…"></textarea>
+
+    <a class="button" id="finishButton" href="#">Finish</a>
+    <a class="back-button" id="backButton">← Back</a>
+
+    <footer>© 2026 Morrow</footer>
+  </main>
+
+  <script>
+    const params  = new URLSearchParams(window.location.search);
+    const topic   = params.get("topic") || "";
+    const moodBefore  = params.get("mood") || "";
+    const minutes = params.get("minutes") || "5";
+
+    let moodAfter = "";
+
+    const reflections = {
+      "Breathing":       "How did your breath feel as you slowed down? Did anything shift in your body or mind?",
+      "Clarity":         "What feels clearer now than it did a moment ago? What softened or came into focus?",
+      "Slowing down":    "What changed when you allowed yourself to move more gently? What did you notice?",
+      "Letting go":      "What felt lighter when you loosened your grip? What might you release next?",
+      "Staying present": "What details stood out when you returned to the moment? How did presence feel?",
+      "Calm energy":     "Where did you feel steadiness or ease? What helped you settle into that rhythm?",
+      "Focus":           "What was it like to give your attention to one thing? What became less important?",
+      "Gratitude":       "What small thing brought you a sense of appreciation? How did it shift your mood?",
+      "Resetting":       "What feels new or refreshed right now? What are you ready to begin again?",
+      "Mindfulness":     "What did you notice when you observed without judgment? What surprised you?"
+    };
+
+    document.getElementById("title").textContent =
+      topic ? `${topic} — a moment to reflect` : "A moment to reflect";
+
+    document.getElementById("prompt").textContent =
+      reflections[topic] || "Take a moment to reflect on how you feel right now.";
+
+    document.getElementById("backButton").href =
+      "next.html?" + new URLSearchParams({ topic, mood: moodBefore, minutes }).toString();
+
+    // After-mood selection
+    document.querySelectorAll("#moodAfterRow .mood-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#moodAfterRow .mood-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        moodAfter = btn.dataset.mood;
+      });
+    });
+
+    document.getElementById("finishButton").addEventListener("click", function (e) {
+      e.preventDefault();
+      const text = document.getElementById("reflectionText").value.trim();
+      if (text || moodAfter) {
+        const entry = {
+          topic:       topic || "General",
+          reflection:  text,
+          moodBefore:  moodBefore,
+          moodAfter:   moodAfter,
+          minutes:     parseInt(minutes),
+          date:        new Date().toISOString()
+        };
+        const existing = JSON.parse(localStorage.getItem("morrowJournal") || "[]");
+        existing.unshift(entry);
+        localStorage.setItem("morrowJournal", JSON.stringify(existing));
+      }
+      window.location.href = "start.html";
+    });
+  </script>
+
+</body>
+</html>

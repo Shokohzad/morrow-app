@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guided Moment</title>
+
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .breath-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 2rem 0 2.5rem;
+      gap: 1.25rem;
+    }
+
+    /* Fixed to the fully expanded diameter (120px × 1.7 = 204px) */
+    .breath-wrapper {
+      width: 210px;
+      height: 210px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .breath-circle {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: var(--color-card);
+      border: 2px solid var(--color-border);
+      transition: transform 0s;
+    }
+
+    .breath-circle.inhale {
+      animation: inhale 4s ease-in-out forwards;
+    }
+
+    .breath-circle.hold {
+      animation: hold 4s linear forwards;
+    }
+
+    .breath-circle.exhale {
+      animation: exhale 6s ease-in-out forwards;
+    }
+
+    @keyframes inhale {
+      from { transform: scale(1); }
+      to   { transform: scale(1.7); }
+    }
+
+    @keyframes hold {
+      from { transform: scale(1.7); }
+      to   { transform: scale(1.7); }
+    }
+
+    @keyframes exhale {
+      from { transform: scale(1.7); }
+      to   { transform: scale(1); }
+    }
+
+    .breath-label {
+      font-size: 1rem;
+      color: var(--color-muted);
+      letter-spacing: 0.05em;
+      min-height: 1.5rem;
+      text-align: center;
+    }
+
+    .breath-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .breath-toggle {
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 0.5rem 1.2rem;
+      font-size: 0.9rem;
+      font-family: var(--font-main);
+      color: var(--color-text);
+      cursor: pointer;
+    }
+
+    .breath-toggle:hover {
+      background: var(--color-surface);
+    }
+
+    .breath-count {
+      font-size: 0.875rem;
+      color: var(--color-muted);
+    }
+
+    .session-done-msg {
+      color: var(--color-muted);
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div style="display:flex; align-items:center;">
+      <img src="Morrow.svg" alt="Morrow logo" style="height:32px; width:auto;">
+    </div>
+
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="start.html">Focus</a>
+      <a href="journal.html">Journal</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1 id="title"></h1>
+    <p id="moment"></p>
+
+    <!-- Session timer -->
+    <div class="session-timer" id="sessionTimer"></div>
+    <div class="session-timer-label" id="sessionTimerLabel"></div>
+
+    <!-- Ambient sound -->
+    <div class="sound-row" id="soundRow">
+      <button class="sound-btn" data-sound="none">Silent</button>
+      <button class="sound-btn" data-sound="rain">Rain</button>
+      <button class="sound-btn" data-sound="wind">Wind</button>
+      <button class="sound-btn" data-sound="waterfall">Waterfall</button>
+      <button class="sound-btn" data-sound="beach">Beach</button>
+      <button class="sound-btn" data-sound="birds">Birds</button>
+      <button class="sound-btn" data-sound="bowl">Singing bowl</button>
+    </div>
+
+    <!-- Breathing animation -->
+    <div class="breath-container">
+      <div class="breath-wrapper">
+        <div class="breath-circle" id="breathCircle"></div>
+      </div>
+      <div class="breath-label" id="breathLabel">Ready</div>
+      <div class="breath-controls">
+        <button class="breath-toggle" id="breathToggle">Begin</button>
+        <span class="breath-count" id="breathCount"></span>
+      </div>
+    </div>
+
+    <!-- Guided text prompt -->
+    <p class="guided-prompt" id="guidedPrompt"></p>
+
+    <!-- End-of-session summary -->
+    <div class="summary-card" id="summaryCard">
+      <h3 id="summaryTitle"></h3>
+      <div class="summary-row"><span>Topic</span><span id="summaryTopic"></span></div>
+      <div class="summary-row"><span>Duration</span><span id="summaryDuration"></span></div>
+      <div class="summary-row"><span>Breaths completed</span><span id="summaryBreaths"></span></div>
+      <div class="summary-row" id="summaryMoodRow" style="display:none"><span>Mood going in</span><span id="summaryMood"></span></div>
+    </div>
+
+    <a class="button" id="reflectButton">Reflect</a>
+    <a class="back-button" id="backButton">← Back</a>
+
+    <footer>© 2026 Morrow</footer>
+  </main>
+
+  <script>
+    const params   = new URLSearchParams(window.location.search);
+    const topic    = params.get("topic") || "";
+    const mood     = params.get("mood") || "";
+    const minutes  = parseInt(params.get("minutes") || "5");
+
+    const guided = {
+      "Breathing":       "Take a slow breath in through your nose. Hold for a moment. Then exhale gently. Let your shoulders soften as the air leaves your body.",
+      "Clarity":         "Close your eyes for a moment. Notice the thoughts passing through. Let them drift without grabbing onto any of them.",
+      "Slowing down":    "Pause. Feel the weight of your body supported beneath you. Let your movements become just a little slower than usual.",
+      "Letting go":      "Imagine placing what you're holding onto in an open palm. Then picture your hand gently releasing it, letting it float away.",
+      "Staying present": "Notice one thing you can see, one thing you can hear, and one thing you can feel. Let these anchor you in this moment.",
+      "Calm energy":     "Sit tall but relaxed. Feel a quiet strength in your posture. Let your breath move smoothly, steady and unforced.",
+      "Focus":           "Choose one thing in your environment to rest your attention on. Stay with it for a few breaths, letting distractions soften.",
+      "Gratitude":       "Think of one small thing that supported you today. Hold it in your mind for a moment and let appreciation rise gently.",
+      "Resetting":       "Take a deep breath in. As you exhale, imagine wiping the slate clean. This moment is a fresh beginning.",
+      "Mindfulness":     "Notice your breath, your posture, and the sensations in your body. Let everything be exactly as it is, without changing it."
+    };
+
+    const userName = localStorage.getItem("morrowName") || "";
+
+    document.getElementById("title").textContent = topic ? `${topic}, gently` : "A gentle moment";
+    document.getElementById("moment").textContent =
+      guided[topic] || "Take a moment to settle into yourself. Let this be a soft pause in your day.";
+
+    const reflectParams = new URLSearchParams({ topic, mood, minutes });
+    document.getElementById("reflectButton").href = "reflection.html?" + reflectParams.toString();
+    document.getElementById("backButton").href    = "focus.html?" + new URLSearchParams({ topic, mood, minutes }).toString();
+
+    // ── Guided text prompts ──────────────────────────────────────────────────
+    const promptsByTopic = {
+      "Breathing":       ["Feel your chest rise gently.", "Let each exhale be a small release.", "There is nothing to do but breathe.", "Your breath is always here with you."],
+      "Clarity":         ["Let one thought drift past without following it.", "What feels lighter right now?", "You don't need to solve anything in this moment.", "Notice what becomes still when you stop reaching."],
+      "Slowing down":    ["There is no hurry here.", "Feel the ground beneath you.", "Let your pace become gentler.", "This moment has nowhere to be."],
+      "Letting go":      ["What would it feel like to hold a little less?", "You are allowed to put things down.", "Let this breath carry something away.", "Lightness is on the other side of release."],
+      "Staying present": ["What do you notice right now?", "Come back to this room, this chair, this breath.", "The past and future can wait.", "You are here. That is enough."],
+      "Calm energy":     ["Feel a quiet steadiness in your body.", "Breathe in strength. Breathe out tension.", "You can be both still and alive.", "Let your calm be your anchor."],
+      "Focus":           ["Gently return when your mind wanders.", "One breath, one moment.", "Let the edges soften. Keep the centre.", "You are here. Everything else can wait."],
+      "Gratitude":       ["What is quietly supporting you right now?", "Notice one small thing that is going well.", "Let appreciation settle in your chest.", "Gratitude softens even the hardest moments."],
+      "Resetting":       ["This breath is a fresh beginning.", "You don't need to carry what came before.", "Let this moment be clean and new.", "Every exhale is a small letting go."],
+      "Mindfulness":     ["Observe without judgement.", "What sensations are present right now?", "You are the watcher, not the thought.", "Rest in simply being aware."]
+    };
+    const defaultPrompts = ["Breathe gently.", "You are here.", "Let this moment be enough.", "There is nowhere else to be."];
+    const prompts = promptsByTopic[topic] || defaultPrompts;
+
+    const guidedPromptEl = document.getElementById("guidedPrompt");
+    let promptIndex = 0;
+    let promptTimer = null;
+
+    function showNextPrompt() {
+      guidedPromptEl.classList.remove("visible");
+      setTimeout(function () {
+        guidedPromptEl.textContent = prompts[promptIndex % prompts.length];
+        guidedPromptEl.classList.add("visible");
+        promptIndex++;
+        promptTimer = setTimeout(showNextPrompt, 60000);
+      }, 600);
+    }
+
+    // ── Session countdown timer ──────────────────────────────────────────────
+    const totalSeconds   = minutes * 60;
+    let secondsLeft      = totalSeconds;
+    let sessionRunning   = false;
+    let sessionInterval  = null;
+    let sessionDone      = false;
+
+    const timerEl      = document.getElementById("sessionTimer");
+    const timerLabelEl = document.getElementById("sessionTimerLabel");
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = s % 60;
+      return String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+    }
+
+    timerEl.textContent = formatTime(totalSeconds);
+    timerLabelEl.textContent = minutes + "-minute session";
+
+    function showSummary() {
+      const card = document.getElementById("summaryCard");
+      const name = userName ? `, ${userName}` : "";
+      document.getElementById("summaryTitle").textContent = `Well done${name}`;
+      document.getElementById("summaryTopic").textContent = topic || "General";
+      document.getElementById("summaryDuration").textContent = minutes + " min";
+      document.getElementById("summaryBreaths").textContent = cycleCount + (cycleCount === 1 ? " breath" : " breaths");
+      if (mood) {
+        document.getElementById("summaryMoodRow").style.display = "flex";
+        document.getElementById("summaryMood").textContent = mood;
+      }
+      card.classList.add("visible");
+    }
+
+    function tickTimer() {
+      secondsLeft--;
+      timerEl.textContent = formatTime(secondsLeft);
+      if (secondsLeft <= 0) {
+        clearInterval(sessionInterval);
+        sessionDone = true;
+        timerLabelEl.textContent = "Session complete";
+        clearTimeout(promptTimer);
+        guidedPromptEl.classList.remove("visible");
+        stopBreathing();
+        stopSound();
+        showSummary();
+      }
+    }
+
+    // ── Breathing animation ──────────────────────────────────────────────────
+    const INHALE = 4000;
+    const HOLD   = 4000;
+    const EXHALE = 6000;
+
+    const circle  = document.getElementById("breathCircle");
+    const label   = document.getElementById("breathLabel");
+    const toggle  = document.getElementById("breathToggle");
+    const counter = document.getElementById("breathCount");
+
+    let breathRunning = false;
+    let cycleCount    = 0;
+    let breathTimer   = null;
+
+    function setPhase(phase) {
+      circle.className = "breath-circle";
+      void circle.offsetWidth;
+      circle.classList.add(phase);
+      const labels = { inhale: "Breathe in", hold: "Hold", exhale: "Breathe out" };
+      label.textContent = labels[phase];
+    }
+
+    function runCycle() {
+      if (!breathRunning) return;
+      setPhase("inhale");
+      breathTimer = setTimeout(function () {
+        if (!breathRunning) return;
+        setPhase("hold");
+        breathTimer = setTimeout(function () {
+          if (!breathRunning) return;
+          setPhase("exhale");
+          breathTimer = setTimeout(function () {
+            if (!breathRunning) return;
+            cycleCount++;
+            counter.textContent = cycleCount === 1 ? "1 breath" : cycleCount + " breaths";
+            runCycle();
+          }, EXHALE);
+        }, HOLD);
+      }, INHALE);
+    }
+
+    function stopBreathing() {
+      breathRunning = false;
+      clearTimeout(breathTimer);
+      circle.className = "breath-circle";
+      label.textContent = sessionDone ? "Well done" : "Paused";
+      toggle.textContent = "Resume";
+      toggle.disabled = sessionDone;
+    }
+
+    toggle.addEventListener("click", function () {
+      if (sessionDone) return;
+      if (!breathRunning) {
+        breathRunning = true;
+        toggle.textContent = "Pause";
+        // Start session timer and guided prompts on first begin click
+        if (!sessionRunning) {
+          sessionRunning = true;
+          sessionInterval = setInterval(tickTimer, 1000);
+          showNextPrompt();
+        }
+        runCycle();
+      } else {
+        stopBreathing();
+      }
+    });
+
+    // ── Ambient sound (Web Audio API — no files needed) ──────────────────────
+    let audioCtx     = null;
+    let soundNodes   = [];
+    let currentSound = "none";
+
+    function stopSound() {
+      soundNodes.forEach(function (n) { try { n.stop(); } catch(e) {} });
+      soundNodes = [];
+      if (audioCtx) { audioCtx.close(); audioCtx = null; }
+    }
+
+    function makeNoiseBuffer(ctx, seconds) {
+      const buf  = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      return buf;
+    }
+
+    function addFilteredNoise(ctx, dest, freq, Q, rate, gain, offset) {
+      const src = ctx.createBufferSource();
+      src.buffer = makeNoiseBuffer(ctx, 4);
+      src.loop = true;
+      src.playbackRate.value = rate;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = freq;
+      filter.Q.value = Q;
+
+      const g = ctx.createGain();
+      g.gain.value = gain;
+
+      src.connect(filter);
+      filter.connect(g);
+      g.connect(dest);
+      src.start(ctx.currentTime + offset);
+      soundNodes.push(src);
+    }
+
+    function startSound(type) {
+      stopSound();
+      if (type === "none") return;
+
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const master = audioCtx.createGain();
+      master.gain.value = 0.22;
+      master.connect(audioCtx.destination);
+
+      if (type === "rain") {
+        // Gentle window rain — very slow, narrow-band, quiet layering
+        // Narrow Q creates soft tap-like texture rather than a rush
+        master.gain.value = 0.13;
+        addFilteredNoise(audioCtx, master, 700,  3.5, 0.12, 0.5,  0);
+        addFilteredNoise(audioCtx, master, 950,  4.0, 0.10, 0.45, 0.2);
+        addFilteredNoise(audioCtx, master, 550,  3.0, 0.11, 0.4,  0.4);
+        addFilteredNoise(audioCtx, master, 1200, 4.5, 0.09, 0.3,  0.1);
+        // Very faint low-end — distant rain on a roof
+        addFilteredNoise(audioCtx, master, 180,  2.0, 0.1,  0.25, 0);
+        // Barely-there breeze — keeps it from feeling static
+        addFilteredNoise(audioCtx, master, 300,  1.5, 0.08, 0.15, 0.3);
+      }
+
+      if (type === "wind") {
+        // Gentle, slowly shifting wind
+        addFilteredNoise(audioCtx, master, 280,  2.0, 0.15, 0.3,  0);
+        addFilteredNoise(audioCtx, master, 480,  1.6, 0.18, 0.25, 0.2);
+        addFilteredNoise(audioCtx, master, 700,  1.2, 0.2,  0.18, 0.4);
+        addFilteredNoise(audioCtx, master, 160,  2.5, 0.12, 0.15, 0.1);
+        addFilteredNoise(audioCtx, master, 1000, 1.0, 0.15, 0.12, 0.3);
+      }
+
+      if (type === "waterfall") {
+        // Broad-band rushing noise with deep low-end and airy highs
+        addFilteredNoise(audioCtx, master, 600,  0.2, 0.7, 0.5, 0);
+        addFilteredNoise(audioCtx, master, 1400, 0.25, 0.9, 0.45, 0.1);
+        addFilteredNoise(audioCtx, master, 3000, 0.2, 1.1, 0.3, 0.2);
+        addFilteredNoise(audioCtx, master, 120,  1.5, 0.5, 0.35, 0);
+        addFilteredNoise(audioCtx, master, 5000, 0.3, 0.8, 0.2, 0.3);
+        // Occasional low rumble for impact
+        addFilteredNoise(audioCtx, master, 60,   3.0, 0.3, 0.2, 0.05);
+      }
+
+      if (type === "beach") {
+        // Ocean waves: slow rolling swell using low-freq noise with gentle LFO on gain
+        const waveCount = 4;
+        for (let i = 0; i < waveCount; i++) {
+          const src = audioCtx.createBufferSource();
+          src.buffer = makeNoiseBuffer(audioCtx, 6);
+          src.loop = true;
+          src.playbackRate.value = 0.18 + Math.random() * 0.1;
+
+          const lowpass = audioCtx.createBiquadFilter();
+          lowpass.type = "lowpass";
+          lowpass.frequency.value = 500 + Math.random() * 300;
+          lowpass.Q.value = 0.5;
+
+          const env = audioCtx.createGain();
+          env.gain.value = 0;
+
+          src.connect(lowpass);
+          lowpass.connect(env);
+          env.connect(master);
+          src.start();
+          soundNodes.push(src);
+
+          // Each wave swells in and out on a staggered cycle (~8–12s)
+          const period  = 8000 + Math.random() * 4000;
+          const peakVol = 0.35 + Math.random() * 0.2;
+          const offset  = i * (period / waveCount);
+
+          function swellWave(gainNode, vol, p, startDelay) {
+            function cycle(t) {
+              if (!audioCtx) return;
+              gainNode.gain.setValueAtTime(0, t);
+              gainNode.gain.linearRampToValueAtTime(vol, t + (p / 1000) * 0.45);
+              gainNode.gain.linearRampToValueAtTime(0,   t + (p / 1000) * 0.9);
+              const tid = setTimeout(function () { cycle(audioCtx ? audioCtx.currentTime : 0); }, p);
+              soundNodes.push({ stop: function () { clearTimeout(tid); } });
+            }
+            const tid = setTimeout(function () { cycle(audioCtx ? audioCtx.currentTime : 0); }, startDelay);
+            soundNodes.push({ stop: function () { clearTimeout(tid); } });
+          }
+          swellWave(env, peakVol, period, offset);
+        }
+        // Soft sea breeze underneath
+        addFilteredNoise(audioCtx, master, 400, 1.6, 0.2, 0.08, 0);
+        addFilteredNoise(audioCtx, master, 700, 1.2, 0.25, 0.06, 0.3);
+
+        // Sea birds woven in — gliding gull calls
+        const seabirdFreqs = [800, 950, 1100, 700, 1050, 900];
+        function scheduleSeabird() {
+          if (!audioCtx) return;
+          const freq = seabirdFreqs[Math.floor(Math.random() * seabirdFreqs.length)];
+          const when = audioCtx.currentTime;
+          const dur  = 0.3 + Math.random() * 0.5;
+
+          const osc = audioCtx.createOscillator();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq * 0.85, when);
+          osc.frequency.linearRampToValueAtTime(freq * 1.2, when + dur * 0.4);
+          osc.frequency.linearRampToValueAtTime(freq * 0.9, when + dur);
+
+          const env = audioCtx.createGain();
+          env.gain.setValueAtTime(0, when);
+          env.gain.linearRampToValueAtTime(0.13, when + 0.05);
+          env.gain.setValueAtTime(0.13, when + dur - 0.08);
+          env.gain.linearRampToValueAtTime(0, when + dur);
+
+          osc.connect(env); env.connect(master);
+          osc.start(when); osc.stop(when + dur + 0.05);
+          soundNodes.push(osc);
+
+          const nextIn = 3000 + Math.random() * 7000;
+          const t = setTimeout(scheduleSeabird, nextIn);
+          soundNodes.push({ stop: function () { clearTimeout(t); } });
+        }
+        scheduleSeabird();
+        const sbT2 = setTimeout(scheduleSeabird, 4500);
+        soundNodes.push({ stop: function () { clearTimeout(sbT2); } });
+      }
+
+      if (type === "birds") {
+        // Synthesised bird chirps: short sine bursts at natural frequencies
+        const birdFreqs = [2200, 2800, 3400, 1900, 2600, 3100, 2400];
+        function scheduleBird() {
+          if (!audioCtx) return;
+          const freq   = birdFreqs[Math.floor(Math.random() * birdFreqs.length)];
+          const when   = audioCtx.currentTime;
+          const dur    = 0.06 + Math.random() * 0.1;
+          const chirps = 1 + Math.floor(Math.random() * 4);
+
+          for (let c = 0; c < chirps; c++) {
+            const osc = audioCtx.createOscillator();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq + Math.random() * 400, when + c * 0.12);
+            osc.frequency.exponentialRampToValueAtTime(freq * 1.15, when + c * 0.12 + dur);
+
+            const env = audioCtx.createGain();
+            env.gain.setValueAtTime(0, when + c * 0.12);
+            env.gain.linearRampToValueAtTime(0.12, when + c * 0.12 + 0.01);
+            env.gain.exponentialRampToValueAtTime(0.001, when + c * 0.12 + dur);
+
+            osc.connect(env); env.connect(master);
+            osc.start(when + c * 0.12);
+            osc.stop(when + c * 0.12 + dur + 0.01);
+            soundNodes.push(osc);
+          }
+
+          const nextIn = 1500 + Math.random() * 4500;
+          const t = setTimeout(scheduleBird, nextIn);
+          soundNodes.push({ stop: function () { clearTimeout(t); } });
+        }
+
+        // Gentle background wind under the birds
+        addFilteredNoise(audioCtx, master, 400, 1.8, 0.2, 0.1, 0);
+        scheduleBird();
+        const bT2 = setTimeout(scheduleBird, 2200);
+        soundNodes.push({ stop: function () { clearTimeout(bT2); } });
+      }
+
+      if (type === "bowl") {
+        // Singing bowl: sustained fundamental with harmonic overtones, slow fade-in/out cycle
+        const fundamentals = [432, 528, 396]; // meditation-tuned frequencies
+        fundamentals.forEach(function (hz, i) {
+          const osc = audioCtx.createOscillator();
+          osc.type = "sine";
+          osc.frequency.value = hz;
+
+          const env = audioCtx.createGain();
+          env.gain.value = 0;
+
+          osc.connect(env);
+          env.connect(master);
+          osc.start();
+          soundNodes.push(osc);
+
+          // Slow swell: fade in over 4s, hold, fade out over 4s, silence, repeat
+          const period = 14; // seconds per swell
+          const vol    = i === 0 ? 0.18 : 0.06;
+
+          function swell(t) {
+            if (!audioCtx) return;
+            env.gain.setValueAtTime(0, t);
+            env.gain.linearRampToValueAtTime(vol, t + 4);
+            env.gain.setValueAtTime(vol, t + 8);
+            env.gain.linearRampToValueAtTime(0, t + 12);
+            const tid = setTimeout(function() { swell(audioCtx ? audioCtx.currentTime : 0); }, period * 1000);
+            soundNodes.push({ stop: function() { clearTimeout(tid); } });
+          }
+
+          swell(audioCtx.currentTime + i * 2);
+        });
+      }
+    }
+
+    document.querySelectorAll(".sound-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".sound-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentSound = btn.dataset.sound;
+        if (!sessionDone) {
+          startSound(currentSound);
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
