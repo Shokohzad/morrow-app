@@ -20,15 +20,19 @@
       <a href="start.html">Focus</a>
       <a href="journal.html">Journal</a>
     </nav>
+    <div></div>
   </header>
 
   <!-- First-visit name prompt -->
   <div class="name-overlay" id="nameOverlay" style="display:none">
     <div class="name-card">
-      <h2>Welcome to Morrow</h2>
-      <p>What shall we call you?</p>
-      <input class="name-input" id="nameInput" type="text" placeholder="Your name…" maxlength="40" autocomplete="off" />
-      <a class="button" href="#" id="nameSaveBtn" style="margin:0">Continue</a>
+      <img src="Morrow.svg" alt="Morrow" class="name-logo" />
+      <p class="name-tagline" id="nameTagline" style="opacity:0">Your daily pause</p>
+      <div class="name-form" id="nameForm" style="opacity:0">
+        <p class="name-question">What shall we call you?</p>
+        <input class="name-input" id="nameInput" type="text" placeholder="Your name…" maxlength="40" autocomplete="off" />
+        <a class="button" href="#" id="nameSaveBtn" style="margin:0">Begin</a>
+      </div>
     </div>
   </div>
 
@@ -38,11 +42,7 @@
 
     <div class="stats-bar" id="statsBar" style="display:none"></div>
 
-    <a class="button" href="start.html">Get Started</a>
-
     <section class="features">
-      <h2>What makes it different</h2>
-
       <div class="feature-list">
         <div class="feature">
           <div class="icon">
@@ -78,6 +78,8 @@
       </div>
     </section>
 
+    <a class="button" href="start.html">Get Started</a>
+
     <footer>
       © 2026 Morrow
     </footer>
@@ -88,7 +90,14 @@
     const storedName = localStorage.getItem("morrowName");
     if (!storedName) {
       document.getElementById("nameOverlay").style.display = "flex";
-      document.getElementById("nameInput").focus();
+      // Reveal sequence: tagline fades in after 800ms, form after 1800ms
+      setTimeout(function () {
+        document.getElementById("nameTagline").style.opacity = "1";
+      }, 800);
+      setTimeout(function () {
+        document.getElementById("nameForm").style.opacity = "1";
+        document.getElementById("nameInput").focus();
+      }, 1800);
     } else {
       setGreeting(storedName);
     }
