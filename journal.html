@@ -78,6 +78,104 @@
     .clear-button:hover {
       color: var(--color-text);
     }
+
+    /* ── Monthly mood calendar ── */
+    .month-calendar {
+      margin: 2.5rem 0;
+    }
+
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .month-nav-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .month-nav-btn {
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: var(--font-main);
+      color: var(--color-text);
+      cursor: pointer;
+    }
+
+    .month-nav-btn:hover { background: var(--color-card); }
+    .month-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-day-header {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--color-muted);
+      padding-bottom: 0.4rem;
+      letter-spacing: 0.04em;
+    }
+
+    .cal-day {
+      position: relative;
+      border-radius: 8px;
+      background: var(--color-surface);
+      border: 1px solid transparent;
+      height: 52px;
+    }
+
+    .cal-day.empty {
+      background: none;
+      border-color: transparent;
+    }
+
+    .cal-day.today {
+      background: var(--color-button);
+      border-color: var(--color-button);
+    }
+
+    .cal-day.has-entry {
+      background: var(--color-card);
+      border-color: var(--color-border);
+    }
+
+    .cal-day.today.has-entry {
+      background: var(--color-button);
+      border-color: var(--color-button);
+    }
+
+    .cal-day-num {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.72rem;
+      color: var(--color-muted);
+      line-height: 1;
+    }
+
+    .cal-day.today .cal-day-num {
+      color: var(--color-button-text);
+      font-weight: 600;
+    }
+
+    .cal-day-moon {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.95rem;
+      line-height: 1;
+    }
   </style>
 </head>
 
@@ -101,6 +199,7 @@
     <p>A quiet record of your moments of reflection.</p>
 
     <div id="moodChartContainer"></div>
+    <div id="monthCalendarContainer"></div>
     <div id="journalContent"></div>
 
     <footer>© 2026 Morrow</footer>
@@ -164,6 +263,100 @@
       `;
       chartContainer.appendChild(chartEl);
     }
+
+    // ── Monthly mood calendar ────────────────────────────────────────────────
+    const calContainer = document.getElementById("monthCalendarContainer");
+    const now = new Date();
+    let calYear  = now.getFullYear();
+    let calMonth = now.getMonth();
+
+    function buildCalendar() {
+      calContainer.innerHTML = "";
+
+      const monthName = new Date(calYear, calMonth, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+      const firstDay  = new Date(calYear, calMonth, 1).getDay();
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+      // Index entries by day string "YYYY-M-D"
+      const byDay = {};
+      entries.forEach(function (e) {
+        const d = new Date(e.date);
+        if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+          const key = calYear + "-" + calMonth + "-" + d.getDate();
+          if (!byDay[key]) byDay[key] = e;
+        }
+      });
+
+      const isCurrentMonth = calYear === now.getFullYear() && calMonth === now.getMonth();
+      const nextDisabled   = isCurrentMonth;
+
+      const wrap = document.createElement("div");
+      wrap.className = "month-calendar";
+      wrap.innerHTML = `
+        <div class="month-nav">
+          <button class="month-nav-btn" id="calPrev">← Prev</button>
+          <span class="month-nav-title">${monthName}</span>
+          <button class="month-nav-btn" id="calNext" ${nextDisabled ? "disabled" : ""}>Next →</button>
+        </div>
+        <div class="cal-grid" id="calGrid">
+          <div class="cal-day-header">Sun</div>
+          <div class="cal-day-header">Mon</div>
+          <div class="cal-day-header">Tue</div>
+          <div class="cal-day-header">Wed</div>
+          <div class="cal-day-header">Thu</div>
+          <div class="cal-day-header">Fri</div>
+          <div class="cal-day-header">Sat</div>
+        </div>
+      `;
+      calContainer.appendChild(wrap);
+
+      const grid = wrap.querySelector("#calGrid");
+
+      // Empty cells before first day
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement("div");
+        empty.className = "cal-day empty";
+        grid.appendChild(empty);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const key   = calYear + "-" + calMonth + "-" + d;
+        const entry = byDay[key];
+        const isToday = isCurrentMonth && d === now.getDate();
+
+        const cell = document.createElement("div");
+        cell.className = "cal-day" + (entry ? " has-entry" : "") + (isToday ? " today" : "");
+
+        const num = document.createElement("span");
+        num.className = "cal-day-num";
+        num.textContent = d;
+        cell.appendChild(num);
+
+        if (entry) {
+          const moon = document.createElement("span");
+          moon.className = "cal-day-moon";
+          moon.textContent = entry.moodAfter || entry.moodBefore || "";
+          if (moon.textContent) cell.appendChild(moon);
+        }
+
+        grid.appendChild(cell);
+      }
+
+      wrap.querySelector("#calPrev").addEventListener("click", function () {
+        calMonth--;
+        if (calMonth < 0) { calMonth = 11; calYear--; }
+        buildCalendar();
+      });
+
+      wrap.querySelector("#calNext").addEventListener("click", function () {
+        if (nextDisabled) return;
+        calMonth++;
+        if (calMonth > 11) { calMonth = 0; calYear++; }
+        buildCalendar();
+      });
+    }
+
+    buildCalendar();
 
     if (entries.length === 0) {
       container.innerHTML = `

@@ -10,6 +10,30 @@
 
 <body>
 
+  <!-- Intention overlay — shown once per day -->
+  <div class="intention-overlay" id="intentionOverlay">
+    <div class="intention-card">
+      <span class="intention-label">Morning intention</span>
+      <p class="intention-question">What's one thing you want to carry lightly today?</p>
+
+      <div class="intention-chips" id="intentionChips">
+        <button class="intention-chip" data-value="Ease">Ease</button>
+        <button class="intention-chip" data-value="Presence">Presence</button>
+        <button class="intention-chip" data-value="Kindness">Kindness</button>
+        <button class="intention-chip" data-value="Surrender">Surrender</button>
+        <button class="intention-chip" data-value="Calm">Calm</button>
+        <button class="intention-chip" data-value="Gratitude">Gratitude</button>
+      </div>
+
+      <input class="intention-input" id="intentionInput" type="text" placeholder="Or write your own…" maxlength="120" />
+
+      <div class="intention-actions">
+        <a class="button" id="intentionContinueBtn" href="#">Hold this</a>
+        <button class="intention-skip" id="intentionSkipBtn">Skip for today</button>
+      </div>
+    </div>
+  </div>
+
   <header>
     <div style="display:flex; align-items:center;">
       <img src="Morrow.svg" alt="Morrow logo" style="height:32px; width:auto;">
@@ -43,17 +67,7 @@
         <svg width="16" height="16" viewBox="0 0 20 20" fill="gray" xmlns="http://www.w3.org/2000/svg"><polygon points="5,7 15,7 10,12"/></svg>
       </div>
       <div class="custom-select__options" id="focusOptions">
-        <div class="option" data-value="Breathing">Breathing</div>
-        <div class="option" data-value="Clarity">Clarity</div>
-        <div class="option" data-value="Slowing down">Slowing down</div>
-        <div class="option" data-value="Letting go">Letting go</div>
-        <div class="option" data-value="Staying present">Staying present</div>
-        <div class="option" data-value="Calm energy">Calm energy</div>
-        <div class="option" data-value="Focus">Focus</div>
-        <div class="option" data-value="Gratitude">Gratitude</div>
-        <div class="option" data-value="Resetting">Resetting</div>
-        <div class="option" data-value="Mindfulness">Mindfulness</div>
-        <div class="option" data-value="__custom__">Something else…</div>
+        <!-- options built by JS to support favourites ordering -->
       </div>
     </div>
     <input class="custom-input" id="customFocus" type="text" placeholder="Describe your focus…" maxlength="60" />
@@ -73,10 +87,158 @@
   </main>
 
   <script>
-    let selectedMood = "";
-    let selectedMinutes = 5;
+    // ── Intention overlay ────────────────────────────────────────────────────
+    const overlay     = document.getElementById("intentionOverlay");
+    const intentInput = document.getElementById("intentionInput");
+    const continueBtn = document.getElementById("intentionContinueBtn");
+    let   intentValue = "";
 
-    // Mood selection
+    function dismissOverlay() {
+      overlay.style.opacity = "0";
+      overlay.style.transition = "opacity 0.4s ease";
+      setTimeout(function () { overlay.style.display = "none"; }, 420);
+    }
+
+    function todayKey() {
+      const d = new Date();
+      return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+    }
+
+    if (localStorage.getItem("morrowIntentionDate") === todayKey()) {
+      overlay.style.display = "none";
+    }
+
+    // Chip selection clears the text input
+    document.querySelectorAll(".intention-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        document.querySelectorAll(".intention-chip").forEach(c => c.classList.remove("selected"));
+        chip.classList.add("selected");
+        intentValue = chip.dataset.value;
+        intentInput.value = "";
+      });
+    });
+
+    // Typing in the input deselects any chip
+    intentInput.addEventListener("input", function () {
+      if (intentInput.value.trim()) {
+        document.querySelectorAll(".intention-chip").forEach(c => c.classList.remove("selected"));
+        intentValue = intentInput.value.trim();
+      } else {
+        intentValue = "";
+      }
+    });
+
+    continueBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const text = intentInput.value.trim() || intentValue;
+      if (!text) return;
+      localStorage.setItem("morrowIntention", text);
+      localStorage.setItem("morrowIntentionDate", todayKey());
+      dismissOverlay();
+    });
+
+    document.getElementById("intentionSkipBtn").addEventListener("click", function () {
+      localStorage.setItem("morrowIntentionDate", todayKey());
+      dismissOverlay();
+    });
+
+    intentInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") continueBtn.click();
+    });
+
+    // ── Favourite topics ─────────────────────────────────────────────────────
+    const ALL_TOPICS = [
+      "Breathing", "Clarity", "Slowing down", "Letting go",
+      "Staying present", "Calm energy", "Focus", "Gratitude",
+      "Resetting", "Mindfulness"
+    ];
+
+    function getFavourites() {
+      return JSON.parse(localStorage.getItem("morrowFavTopics") || "[]");
+    }
+
+    function setFavourites(favs) {
+      localStorage.setItem("morrowFavTopics", JSON.stringify(favs));
+    }
+
+    function buildOptions() {
+      const favs = getFavourites();
+      const optionsList = document.getElementById("focusOptions");
+      optionsList.innerHTML = "";
+
+      const favTopics    = ALL_TOPICS.filter(t => favs.includes(t));
+      const otherTopics  = ALL_TOPICS.filter(t => !favs.includes(t));
+
+      function makeOption(value, label) {
+        const div = document.createElement("div");
+        div.className = "option";
+        div.dataset.value = value;
+
+        const span = document.createElement("span");
+        span.className = "option-label";
+        span.textContent = label;
+        div.appendChild(span);
+
+        if (value !== "__custom__") {
+          const star = document.createElement("button");
+          star.className = "option-star" + (favs.includes(value) ? " active" : "");
+          star.textContent = "★";
+          star.title = favs.includes(value) ? "Remove from favourites" : "Add to favourites";
+          star.addEventListener("click", function (e) {
+            e.stopPropagation();
+            const current = getFavourites();
+            const idx = current.indexOf(value);
+            if (idx === -1) current.push(value);
+            else current.splice(idx, 1);
+            setFavourites(current);
+            buildOptions();
+            // Re-apply selected state if same topic was chosen
+            if (focusValue === value) {
+              optionsList.querySelectorAll(".option").forEach(function (o) {
+                if (o.dataset.value === value) o.classList.add("selected");
+              });
+            }
+          });
+          div.appendChild(star);
+        }
+
+        div.addEventListener("click", function (e) {
+          if (e.target.classList.contains("option-star")) return;
+          document.getElementById("focusOptions").querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
+          div.classList.add("selected");
+          focusValue = value;
+          document.getElementById("focusTriggerText").textContent = label;
+          document.getElementById("focusTriggerText").classList.remove("placeholder");
+          document.getElementById("focusDropdown").classList.remove("open");
+          const customInput = document.getElementById("customFocus");
+          if (value === "__custom__") {
+            customInput.style.display = "block";
+            customInput.focus();
+          } else {
+            customInput.style.display = "none";
+          }
+        });
+
+        return div;
+      }
+
+      if (favTopics.length > 0) {
+        favTopics.forEach(t => optionsList.appendChild(makeOption(t, t)));
+        const divider = document.createElement("div");
+        divider.className = "options-divider";
+        optionsList.appendChild(divider);
+      }
+      otherTopics.forEach(t => optionsList.appendChild(makeOption(t, t)));
+      optionsList.appendChild(makeOption("__custom__", "Something else…"));
+    }
+
+    buildOptions();
+
+    // ── Mood, duration, dropdown ──────────────────────────────────────────────
+    let selectedMood    = "";
+    let selectedMinutes = 5;
+    let focusValue      = "";
+
     document.querySelectorAll(".mood-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("selected"));
@@ -85,7 +247,6 @@
       });
     });
 
-    // Duration selection
     document.querySelectorAll(".duration-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         document.querySelectorAll(".duration-btn").forEach(b => b.classList.remove("selected"));
@@ -94,13 +255,8 @@
       });
     });
 
-    // Custom dropdown
-    let focusValue = "";
     const dropdown = document.getElementById("focusDropdown");
-    const trigger = dropdown.querySelector(".custom-select__trigger");
-    const optionsList = document.getElementById("focusOptions");
-    const triggerText = document.getElementById("focusTriggerText");
-    const customInput = document.getElementById("customFocus");
+    const trigger  = dropdown.querySelector(".custom-select__trigger");
 
     trigger.addEventListener("click", function () {
       dropdown.classList.toggle("open");
@@ -111,23 +267,6 @@
       if (e.key === "Escape") dropdown.classList.remove("open");
     });
 
-    optionsList.querySelectorAll(".option").forEach(function (opt) {
-      opt.addEventListener("click", function () {
-        optionsList.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
-        opt.classList.add("selected");
-        focusValue = opt.dataset.value;
-        triggerText.textContent = opt.textContent;
-        triggerText.classList.remove("placeholder");
-        dropdown.classList.remove("open");
-        if (focusValue === "__custom__") {
-          customInput.style.display = "block";
-          customInput.focus();
-        } else {
-          customInput.style.display = "none";
-        }
-      });
-    });
-
     document.addEventListener("click", function (e) {
       if (!dropdown.contains(e.target)) dropdown.classList.remove("open");
     });
@@ -135,17 +274,16 @@
     // Continue
     document.getElementById("continueBtn").addEventListener("click", function (e) {
       e.preventDefault();
-
       let topic = focusValue;
       if (topic === "__custom__") {
-        topic = customInput.value.trim();
-        if (!topic) { customInput.focus(); return; }
+        topic = document.getElementById("customFocus").value.trim();
+        if (!topic) { document.getElementById("customFocus").focus(); return; }
       }
       if (!topic) return;
 
       const params = new URLSearchParams({
-        topic: topic,
-        mood: selectedMood,
+        topic:   topic,
+        mood:    selectedMood,
         minutes: selectedMinutes
       });
       window.location.href = "focus.html?" + params.toString();

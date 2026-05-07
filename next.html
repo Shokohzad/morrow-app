@@ -15,7 +15,6 @@
       gap: 1.25rem;
     }
 
-    /* Fixed to the fully expanded diameter (120px × 1.7 = 204px) */
     .breath-wrapper {
       width: 210px;
       height: 210px;
@@ -109,7 +108,6 @@
     <div style="display:flex; align-items:center;">
       <img src="Morrow.svg" alt="Morrow logo" style="height:32px; width:auto;">
     </div>
-
     <nav>
       <a href="index.html">Home</a>
       <a href="start.html">Focus</a>
@@ -122,11 +120,9 @@
     <h1 id="title"></h1>
     <p id="moment"></p>
 
-    <!-- Session timer -->
     <div class="session-timer" id="sessionTimer"></div>
     <div class="session-timer-label" id="sessionTimerLabel"></div>
 
-    <!-- Ambient sound -->
     <div class="sound-row" id="soundRow">
       <button class="sound-btn" data-sound="none">Silent</button>
       <button class="sound-btn" data-sound="rain">Rain</button>
@@ -137,7 +133,6 @@
       <button class="sound-btn" data-sound="bowl">Singing bowl</button>
     </div>
 
-    <!-- Breathing animation -->
     <div class="breath-container">
       <div class="breath-wrapper">
         <div class="breath-circle" id="breathCircle"></div>
@@ -149,10 +144,8 @@
       </div>
     </div>
 
-    <!-- Guided text prompt -->
     <p class="guided-prompt" id="guidedPrompt"></p>
 
-    <!-- End-of-session summary -->
     <div class="summary-card" id="summaryCard">
       <h3 id="summaryTitle"></h3>
       <div class="summary-row"><span>Topic</span><span id="summaryTopic"></span></div>
@@ -168,10 +161,10 @@
   </main>
 
   <script>
-    const params   = new URLSearchParams(window.location.search);
-    const topic    = params.get("topic") || "";
-    const mood     = params.get("mood") || "";
-    const minutes  = parseInt(params.get("minutes") || "5");
+    const params  = new URLSearchParams(window.location.search);
+    const topic   = params.get("topic") || "";
+    const mood    = params.get("mood") || "";
+    const minutes = parseInt(params.get("minutes") || "5");
 
     const guided = {
       "Breathing":       "Take a slow breath in through your nose. Hold for a moment. Then exhale gently. Let your shoulders soften as the air leaves your body.",
@@ -188,15 +181,14 @@
 
     const userName = localStorage.getItem("morrowName") || "";
 
-    document.getElementById("title").textContent = topic ? `${topic}, gently` : "A gentle moment";
-    document.getElementById("moment").textContent =
-      guided[topic] || "Take a moment to settle into yourself. Let this be a soft pause in your day.";
+    document.getElementById("title").textContent   = topic ? topic + ", gently" : "A gentle moment";
+    document.getElementById("moment").textContent  = guided[topic] || "Take a moment to settle into yourself. Let this be a soft pause in your day.";
 
-    const reflectParams = new URLSearchParams({ topic, mood, minutes });
-    document.getElementById("reflectButton").href = "reflection.html?" + reflectParams.toString();
-    document.getElementById("backButton").href    = "focus.html?" + new URLSearchParams({ topic, mood, minutes }).toString();
+    const reflectParams = new URLSearchParams({ topic: topic, mood: mood, minutes: minutes });
+    document.getElementById("reflectButton").href  = "reflection.html?" + reflectParams.toString();
+    document.getElementById("backButton").href     = "focus.html?" + new URLSearchParams({ topic: topic, mood: mood, minutes: minutes }).toString();
 
-    // ── Guided text prompts ──────────────────────────────────────────────────
+    // ── Guided prompts ───────────────────────────────────────────────────────
     const promptsByTopic = {
       "Breathing":       ["Feel your chest rise gently.", "Let each exhale be a small release.", "There is nothing to do but breathe.", "Your breath is always here with you."],
       "Clarity":         ["Let one thought drift past without following it.", "What feels lighter right now?", "You don't need to solve anything in this moment.", "Notice what becomes still when you stop reaching."],
@@ -226,32 +218,32 @@
       }, 600);
     }
 
-    // ── Session countdown timer ──────────────────────────────────────────────
-    const totalSeconds   = minutes * 60;
-    let secondsLeft      = totalSeconds;
-    let sessionRunning   = false;
-    let sessionInterval  = null;
-    let sessionDone      = false;
+    // ── Session timer ────────────────────────────────────────────────────────
+    const totalSeconds  = minutes * 60;
+    let secondsLeft     = totalSeconds;
+    let sessionRunning  = false;
+    let sessionInterval = null;
+    let sessionDone     = false;
 
     const timerEl      = document.getElementById("sessionTimer");
     const timerLabelEl = document.getElementById("sessionTimerLabel");
 
     function formatTime(s) {
-      const m = Math.floor(s / 60);
+      const m   = Math.floor(s / 60);
       const sec = s % 60;
       return String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
     }
 
-    timerEl.textContent = formatTime(totalSeconds);
+    timerEl.textContent      = formatTime(totalSeconds);
     timerLabelEl.textContent = minutes + "-minute session";
 
     function showSummary() {
       const card = document.getElementById("summaryCard");
-      const name = userName ? `, ${userName}` : "";
-      document.getElementById("summaryTitle").textContent = `Well done${name}`;
-      document.getElementById("summaryTopic").textContent = topic || "General";
+      const name = userName ? ", " + userName : "";
+      document.getElementById("summaryTitle").textContent    = "Well done" + name;
+      document.getElementById("summaryTopic").textContent    = topic || "General";
       document.getElementById("summaryDuration").textContent = minutes + " min";
-      document.getElementById("summaryBreaths").textContent = cycleCount + (cycleCount === 1 ? " breath" : " breaths");
+      document.getElementById("summaryBreaths").textContent  = cycleCount + (cycleCount === 1 ? " breath" : " breaths");
       if (mood) {
         document.getElementById("summaryMoodRow").style.display = "flex";
         document.getElementById("summaryMood").textContent = mood;
@@ -292,7 +284,7 @@
       circle.className = "breath-circle";
       void circle.offsetWidth;
       circle.classList.add(phase);
-      const labels = { inhale: "Breathe in", hold: "Hold", exhale: "Breathe out" };
+      var labels = { inhale: "Breathe in", hold: "Hold", exhale: "Breathe out" };
       label.textContent = labels[phase];
     }
 
@@ -329,7 +321,6 @@
       if (!breathRunning) {
         breathRunning = true;
         toggle.textContent = "Pause";
-        // Start session timer and guided prompts on first begin click
         if (!sessionRunning) {
           sessionRunning = true;
           sessionInterval = setInterval(tickTimer, 1000);
@@ -341,10 +332,10 @@
       }
     });
 
-    // ── Ambient sound (Web Audio API — no files needed) ──────────────────────
-    let audioCtx     = null;
-    let soundNodes   = [];
-    let currentSound = "none";
+    // ── Ambient sound ────────────────────────────────────────────────────────
+    var audioCtx     = null;
+    var soundNodes   = [];
+    var currentSound = "none";
 
     function stopSound() {
       soundNodes.forEach(function (n) { try { n.stop(); } catch(e) {} });
@@ -353,24 +344,24 @@
     }
 
     function makeNoiseBuffer(ctx, seconds) {
-      const buf  = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      var buf  = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
+      var data = buf.getChannelData(0);
+      for (var i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
       return buf;
     }
 
     function addFilteredNoise(ctx, dest, freq, Q, rate, gain, offset) {
-      const src = ctx.createBufferSource();
+      var src = ctx.createBufferSource();
       src.buffer = makeNoiseBuffer(ctx, 4);
       src.loop = true;
       src.playbackRate.value = rate;
 
-      const filter = ctx.createBiquadFilter();
+      var filter = ctx.createBiquadFilter();
       filter.type = "bandpass";
       filter.frequency.value = freq;
       filter.Q.value = Q;
 
-      const g = ctx.createGain();
+      var g = ctx.createGain();
       g.gain.value = gain;
 
       src.connect(filter);
@@ -385,26 +376,21 @@
       if (type === "none") return;
 
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const master = audioCtx.createGain();
+      var master = audioCtx.createGain();
       master.gain.value = 0.22;
       master.connect(audioCtx.destination);
 
       if (type === "rain") {
-        // Gentle window rain — very slow, narrow-band, quiet layering
-        // Narrow Q creates soft tap-like texture rather than a rush
         master.gain.value = 0.13;
         addFilteredNoise(audioCtx, master, 700,  3.5, 0.12, 0.5,  0);
         addFilteredNoise(audioCtx, master, 950,  4.0, 0.10, 0.45, 0.2);
         addFilteredNoise(audioCtx, master, 550,  3.0, 0.11, 0.4,  0.4);
         addFilteredNoise(audioCtx, master, 1200, 4.5, 0.09, 0.3,  0.1);
-        // Very faint low-end — distant rain on a roof
         addFilteredNoise(audioCtx, master, 180,  2.0, 0.1,  0.25, 0);
-        // Barely-there breeze — keeps it from feeling static
         addFilteredNoise(audioCtx, master, 300,  1.5, 0.08, 0.15, 0.3);
       }
 
       if (type === "wind") {
-        // Gentle, slowly shifting wind
         addFilteredNoise(audioCtx, master, 280,  2.0, 0.15, 0.3,  0);
         addFilteredNoise(audioCtx, master, 480,  1.6, 0.18, 0.25, 0.2);
         addFilteredNoise(audioCtx, master, 700,  1.2, 0.2,  0.18, 0.4);
@@ -413,77 +399,74 @@
       }
 
       if (type === "waterfall") {
-        // Broad-band rushing noise with deep low-end and airy highs
-        addFilteredNoise(audioCtx, master, 600,  0.2, 0.7, 0.5, 0);
+        addFilteredNoise(audioCtx, master, 600,  0.2,  0.7, 0.5,  0);
         addFilteredNoise(audioCtx, master, 1400, 0.25, 0.9, 0.45, 0.1);
-        addFilteredNoise(audioCtx, master, 3000, 0.2, 1.1, 0.3, 0.2);
-        addFilteredNoise(audioCtx, master, 120,  1.5, 0.5, 0.35, 0);
-        addFilteredNoise(audioCtx, master, 5000, 0.3, 0.8, 0.2, 0.3);
-        // Occasional low rumble for impact
-        addFilteredNoise(audioCtx, master, 60,   3.0, 0.3, 0.2, 0.05);
+        addFilteredNoise(audioCtx, master, 3000, 0.2,  1.1, 0.3,  0.2);
+        addFilteredNoise(audioCtx, master, 120,  1.5,  0.5, 0.35, 0);
+        addFilteredNoise(audioCtx, master, 5000, 0.3,  0.8, 0.2,  0.3);
+        addFilteredNoise(audioCtx, master, 60,   3.0,  0.3, 0.2,  0.05);
       }
 
       if (type === "beach") {
-        // Ocean waves: slow rolling swell using low-freq noise with gentle LFO on gain
-        const waveCount = 4;
-        for (let i = 0; i < waveCount; i++) {
-          const src = audioCtx.createBufferSource();
-          src.buffer = makeNoiseBuffer(audioCtx, 6);
-          src.loop = true;
-          src.playbackRate.value = 0.18 + Math.random() * 0.1;
+        var waveCount = 4;
+        for (var i = 0; i < waveCount; i++) {
+          (function (idx) {
+            var src = audioCtx.createBufferSource();
+            src.buffer = makeNoiseBuffer(audioCtx, 6);
+            src.loop = true;
+            src.playbackRate.value = 0.18 + Math.random() * 0.1;
 
-          const lowpass = audioCtx.createBiquadFilter();
-          lowpass.type = "lowpass";
-          lowpass.frequency.value = 500 + Math.random() * 300;
-          lowpass.Q.value = 0.5;
+            var lowpass = audioCtx.createBiquadFilter();
+            lowpass.type = "lowpass";
+            lowpass.frequency.value = 500 + Math.random() * 300;
+            lowpass.Q.value = 0.5;
 
-          const env = audioCtx.createGain();
-          env.gain.value = 0;
+            var env = audioCtx.createGain();
+            env.gain.value = 0;
 
-          src.connect(lowpass);
-          lowpass.connect(env);
-          env.connect(master);
-          src.start();
-          soundNodes.push(src);
+            src.connect(lowpass);
+            lowpass.connect(env);
+            env.connect(master);
+            src.start();
+            soundNodes.push(src);
 
-          // Each wave swells in and out on a staggered cycle (~8–12s)
-          const period  = 8000 + Math.random() * 4000;
-          const peakVol = 0.35 + Math.random() * 0.2;
-          const offset  = i * (period / waveCount);
+            var period  = 8000 + Math.random() * 4000;
+            var peakVol = 0.35 + Math.random() * 0.2;
+            var offset  = idx * (period / waveCount);
 
-          function swellWave(gainNode, vol, p, startDelay) {
-            function cycle(t) {
-              if (!audioCtx) return;
-              gainNode.gain.setValueAtTime(0, t);
-              gainNode.gain.linearRampToValueAtTime(vol, t + (p / 1000) * 0.45);
-              gainNode.gain.linearRampToValueAtTime(0,   t + (p / 1000) * 0.9);
-              const tid = setTimeout(function () { cycle(audioCtx ? audioCtx.currentTime : 0); }, p);
+            function swellWave(gainNode, vol, p, startDelay) {
+              function cycle(t) {
+                if (!audioCtx) return;
+                gainNode.gain.setValueAtTime(0, t);
+                gainNode.gain.linearRampToValueAtTime(vol, t + (p / 1000) * 0.45);
+                gainNode.gain.linearRampToValueAtTime(0,   t + (p / 1000) * 0.9);
+                var tid = setTimeout(function () { cycle(audioCtx ? audioCtx.currentTime : 0); }, p);
+                soundNodes.push({ stop: function () { clearTimeout(tid); } });
+              }
+              var tid = setTimeout(function () { cycle(audioCtx ? audioCtx.currentTime : 0); }, startDelay);
               soundNodes.push({ stop: function () { clearTimeout(tid); } });
             }
-            const tid = setTimeout(function () { cycle(audioCtx ? audioCtx.currentTime : 0); }, startDelay);
-            soundNodes.push({ stop: function () { clearTimeout(tid); } });
-          }
-          swellWave(env, peakVol, period, offset);
+            swellWave(env, peakVol, period, offset);
+          })(i);
         }
-        // Soft sea breeze underneath
-        addFilteredNoise(audioCtx, master, 400, 1.6, 0.2, 0.08, 0);
+
+        addFilteredNoise(audioCtx, master, 400, 1.6, 0.2,  0.08, 0);
         addFilteredNoise(audioCtx, master, 700, 1.2, 0.25, 0.06, 0.3);
 
-        // Sea birds woven in — gliding gull calls
-        const seabirdFreqs = [800, 950, 1100, 700, 1050, 900];
+        var seabirdFreqs = [800, 950, 1100, 700, 1050, 900];
         function scheduleSeabird() {
           if (!audioCtx) return;
-          const freq = seabirdFreqs[Math.floor(Math.random() * seabirdFreqs.length)];
-          const when = audioCtx.currentTime;
-          const dur  = 0.3 + Math.random() * 0.5;
+          var freq = seabirdFreqs[Math.floor(Math.random() * seabirdFreqs.length)];
+          var when = audioCtx.currentTime;
+          var dur  = 0.3 + Math.random() * 0.5;
 
-          const osc = audioCtx.createOscillator();
+          var osc = audioCtx.createOscillator();
           osc.type = "sine";
           osc.frequency.setValueAtTime(freq * 0.85, when);
           osc.frequency.linearRampToValueAtTime(freq * 1.2, when + dur * 0.4);
           osc.frequency.linearRampToValueAtTime(freq * 0.9, when + dur);
 
-          const env = audioCtx.createGain();
+          var env = audioCtx.createGain();
           env.gain.setValueAtTime(0, when);
           env.gain.linearRampToValueAtTime(0.13, when + 0.05);
           env.gain.setValueAtTime(0.13, when + dur - 0.08);
@@ -493,63 +476,62 @@
           osc.start(when); osc.stop(when + dur + 0.05);
           soundNodes.push(osc);
 
-          const nextIn = 3000 + Math.random() * 7000;
-          const t = setTimeout(scheduleSeabird, nextIn);
+          var nextIn = 3000 + Math.random() * 7000;
+          var t = setTimeout(scheduleSeabird, nextIn);
           soundNodes.push({ stop: function () { clearTimeout(t); } });
         }
         scheduleSeabird();
-        const sbT2 = setTimeout(scheduleSeabird, 4500);
+        var sbT2 = setTimeout(scheduleSeabird, 4500);
         soundNodes.push({ stop: function () { clearTimeout(sbT2); } });
       }
 
       if (type === "birds") {
-        // Synthesised bird chirps: short sine bursts at natural frequencies
-        const birdFreqs = [2200, 2800, 3400, 1900, 2600, 3100, 2400];
+        var birdFreqs = [2200, 2800, 3400, 1900, 2600, 3100, 2400];
         function scheduleBird() {
           if (!audioCtx) return;
-          const freq   = birdFreqs[Math.floor(Math.random() * birdFreqs.length)];
-          const when   = audioCtx.currentTime;
-          const dur    = 0.06 + Math.random() * 0.1;
-          const chirps = 1 + Math.floor(Math.random() * 4);
+          var freq   = birdFreqs[Math.floor(Math.random() * birdFreqs.length)];
+          var when   = audioCtx.currentTime;
+          var dur    = 0.06 + Math.random() * 0.1;
+          var chirps = 1 + Math.floor(Math.random() * 4);
 
-          for (let c = 0; c < chirps; c++) {
-            const osc = audioCtx.createOscillator();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(freq + Math.random() * 400, when + c * 0.12);
-            osc.frequency.exponentialRampToValueAtTime(freq * 1.15, when + c * 0.12 + dur);
+          for (var c = 0; c < chirps; c++) {
+            (function (ci) {
+              var osc = audioCtx.createOscillator();
+              osc.type = "sine";
+              osc.frequency.setValueAtTime(freq + Math.random() * 400, when + ci * 0.12);
+              osc.frequency.exponentialRampToValueAtTime(freq * 1.15, when + ci * 0.12 + dur);
 
-            const env = audioCtx.createGain();
-            env.gain.setValueAtTime(0, when + c * 0.12);
-            env.gain.linearRampToValueAtTime(0.12, when + c * 0.12 + 0.01);
-            env.gain.exponentialRampToValueAtTime(0.001, when + c * 0.12 + dur);
+              var env = audioCtx.createGain();
+              env.gain.setValueAtTime(0, when + ci * 0.12);
+              env.gain.linearRampToValueAtTime(0.12, when + ci * 0.12 + 0.01);
+              env.gain.exponentialRampToValueAtTime(0.001, when + ci * 0.12 + dur);
 
-            osc.connect(env); env.connect(master);
-            osc.start(when + c * 0.12);
-            osc.stop(when + c * 0.12 + dur + 0.01);
-            soundNodes.push(osc);
+              osc.connect(env); env.connect(master);
+              osc.start(when + ci * 0.12);
+              osc.stop(when + ci * 0.12 + dur + 0.01);
+              soundNodes.push(osc);
+            })(c);
           }
 
-          const nextIn = 1500 + Math.random() * 4500;
-          const t = setTimeout(scheduleBird, nextIn);
+          var nextIn = 1500 + Math.random() * 4500;
+          var t = setTimeout(scheduleBird, nextIn);
           soundNodes.push({ stop: function () { clearTimeout(t); } });
         }
 
-        // Gentle background wind under the birds
         addFilteredNoise(audioCtx, master, 400, 1.8, 0.2, 0.1, 0);
         scheduleBird();
-        const bT2 = setTimeout(scheduleBird, 2200);
+        var bT2 = setTimeout(scheduleBird, 2200);
         soundNodes.push({ stop: function () { clearTimeout(bT2); } });
       }
 
       if (type === "bowl") {
-        // Singing bowl: sustained fundamental with harmonic overtones, slow fade-in/out cycle
-        const fundamentals = [432, 528, 396]; // meditation-tuned frequencies
+        var fundamentals = [432, 528, 396];
         fundamentals.forEach(function (hz, i) {
-          const osc = audioCtx.createOscillator();
+          var osc = audioCtx.createOscillator();
           osc.type = "sine";
           osc.frequency.value = hz;
 
-          const env = audioCtx.createGain();
+          var env = audioCtx.createGain();
           env.gain.value = 0;
 
           osc.connect(env);
@@ -557,9 +539,8 @@
           osc.start();
           soundNodes.push(osc);
 
-          // Slow swell: fade in over 4s, hold, fade out over 4s, silence, repeat
-          const period = 14; // seconds per swell
-          const vol    = i === 0 ? 0.18 : 0.06;
+          var period = 14;
+          var vol    = i === 0 ? 0.18 : 0.06;
 
           function swell(t) {
             if (!audioCtx) return;
@@ -567,8 +548,8 @@
             env.gain.linearRampToValueAtTime(vol, t + 4);
             env.gain.setValueAtTime(vol, t + 8);
             env.gain.linearRampToValueAtTime(0, t + 12);
-            const tid = setTimeout(function() { swell(audioCtx ? audioCtx.currentTime : 0); }, period * 1000);
-            soundNodes.push({ stop: function() { clearTimeout(tid); } });
+            var tid = setTimeout(function () { swell(audioCtx ? audioCtx.currentTime : 0); }, period * 1000);
+            soundNodes.push({ stop: function () { clearTimeout(tid); } });
           }
 
           swell(audioCtx.currentTime + i * 2);
@@ -578,7 +559,7 @@
 
     document.querySelectorAll(".sound-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        document.querySelectorAll(".sound-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".sound-btn").forEach(function (b) { b.classList.remove("active"); });
         btn.classList.add("active");
         currentSound = btn.dataset.sound;
         if (!sessionDone) {
