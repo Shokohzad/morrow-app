@@ -325,6 +325,10 @@
           sessionRunning = true;
           sessionInterval = setInterval(tickTimer, 1000);
           showNextPrompt();
+          // Resume whichever sound was pre-selected, if any
+          if (currentSound && currentSound !== "none" && !audioCtx) {
+            startSound(currentSound);
+          }
         }
         runCycle();
       } else {
@@ -562,9 +566,7 @@
         document.querySelectorAll(".sound-btn").forEach(function (b) { b.classList.remove("active"); });
         btn.classList.add("active");
         currentSound = btn.dataset.sound;
-        if (!sessionDone) {
-          startSound(currentSound);
-        }
+        if (!sessionDone) startSound(currentSound); // always play before/during, never after
       });
     });
   </script>
